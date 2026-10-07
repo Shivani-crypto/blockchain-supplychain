@@ -1,0 +1,120 @@
+{% extends "layout.html" %}
+{% set active_page = "dashboard" %}
+
+{% block title %}Consumer Marketplace{% endblock %}
+
+{% block content %}
+<div class="top-bar">
+    <div>
+        <h1 class="page-title"><i class="fa-solid fa-bag-shopping" style="color: var(--primary);"></i> Consumer Storefront & Orders</h1>
+        <p class="page-desc">Browse Catalog, Order Finished Products, and Track 4-Leg Delivery</p>
+    </div>
+</div>
+
+<!-- BROWSE PRODUCTS -->
+<div class="glass-card">
+    <h3 style="margin-bottom: 20px;"><i class="fa-solid fa-store" style="color: var(--primary);"></i> Available Finished Products</h3>
+    <div class="catalog-grid">
+        {% for p in products %}
+        <div class="product-card">
+            <div>
+                <span class="product-badge">{{ p.category }}</span>
+                <div class="product-title">{{ p.name }}</div>
+                <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px;">
+                    Manufacturer: <span class="address-code">{{ p.manufacturerAddress[:8] }}...</span>
+                </div>
+                <div class="product-price">${{ p.price }}</div>
+            </div>
+            <button onclick="openOrderModal('{{ p.id }}', '{{ p.name }}')" class="btn btn-primary btn-sm" style="width: 100%; justify-content: center;">
+                <i class="fa-solid fa-cart-plus"></i> Order Product
+            </button>
+        </div>
+        {% else %}
+        <div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 30px;">
+            No products published by manufacturers yet.
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- MY ORDERS & TRACKING -->
+<div class="glass-card">
+    <h3><i class="fa-solid fa-clock-rotate-left" style="color: var(--accent-indigo);"></i> My Placed Orders</h3>
+    <div class="table-responsive">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Order ID</th>
+                    <th>Product</th>
+                    <th>Quantity</th>
+                    <th>Expected Date</th>
+                    <th>Current Status</th>
+                    <th>Full Traceability</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for o in my_orders %}
+                <tr>
+                    <td><strong>{{ o.orderId }}</strong></td>
+                    <td>{{ o.productId }}</td>
+                    <td>{{ o.quantity }}</td>
+                    <td>{{ o.expectedDeliveryDate }}</td>
+                    <td>
+                        <span class="badge {% if o.status_str == 'DELIVERED' %}badge-approved{% elif o.status_str == 'DISRUPTED' %}badge-rejected{% else %}badge-info{% endif %}">
+                            {{ o.status_str }}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="{{ url_for('traceability', search_id=o.orderId) }}" class="btn btn-secondary btn-sm">
+                            <i class="fa-solid fa-route"></i> Trace Path
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px;">
+                        No orders placed yet. Select a product above to place an order.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- MODAL: PLACE ORDER -->
+<div class="modal-overlay" id="orderModal">
+    <div class="modal-box">
+        <h3 style="margin-bottom: 16px;"><i class="fa-solid fa-cart-shopping" style="color: var(--primary);"></i> Place Consumer Order</h3>
+        <form action="{{ url_for('create_order_route') }}" method="POST">
+            <input type="hidden" name="product_id" id="modalProductId">
+            <div class="form-group">
+                <label class="form-label">Product Name</label>
+                <input type="text" id="modalProductName" class="form-control" readonly>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Quantity</label>
+                <input type="number" name="quantity" class="form-control" value="1" min="1" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Requested Delivery Expected Date (Days from now)</label>
+                <input type="number" name="expected_days" class="form-control" value="7" min="1" required>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px;">
+                <button type="button" onclick="closeModal('orderModal')" class="btn btn-secondary">Cancel</button>
+                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Submit Order to Smart Contract</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function openOrderModal(productId, productName) {
+        document.getElementById('modalProductId').value = productId;
+        document.getElementById('modalProductName').value = productName;
+        openModal('orderModal');
+    }
+</script>
+{% endblock %}

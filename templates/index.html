@@ -1,0 +1,149 @@
+{% extends "layout.html" %}
+{% set active_page = "home" %}
+
+{% block title %}Home - Decentralized Supply Chain System{% endblock %}
+
+{% block content %}
+<!-- HERO HEADER SECTION -->
+<div class="glass-card" style="padding: 40px; margin-bottom: 32px; background: linear-gradient(135deg, #ffffff 0%, #eff6ff 100%); border-left: 5px solid var(--primary);">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 24px;">
+        <div style="max-width: 750px;">
+            <div class="badge badge-info" style="margin-bottom: 12px; font-size: 0.8rem; padding: 6px 14px;">
+                <i class="fa-solid fa-shield-halved"></i> Ethereum Smart Contract Powered
+            </div>
+            <h1 style="font-size: 2.3rem; font-weight: 800; color: #0f172a; margin-bottom: 12px; line-height: 1.25;">
+                Decentralized Blockchain Supply Chain Management System
+            </h1>
+            <p style="color: var(--text-muted); font-size: 1.05rem; line-height: 1.6;">
+                An end-to-end, multi-role supply chain tracking and disruption recovery platform powered by <strong>Solidity Smart Contracts</strong>, <strong>Web3.py</strong>, <strong>256-bit AES GCM Encryption</strong>, and <strong>IPFS Document Pinning</strong>.
+            </p>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 12px; min-width: 220px;">
+            <a href="{{ url_for('login') }}" class="btn btn-primary" style="justify-content: center; padding: 12px 24px; font-size: 0.95rem;">
+                <i class="fa-solid fa-right-to-bracket"></i> User Login
+            </a>
+            <a href="{{ url_for('admin_login') }}" class="btn btn-secondary" style="justify-content: center; padding: 12px 24px; font-size: 0.95rem; border-color: var(--accent-indigo); color: var(--accent-indigo);">
+                <i class="fa-solid fa-user-shield"></i> Admin Login
+            </a>
+            <a href="{{ url_for('register') }}" class="btn btn-secondary" style="justify-content: center; padding: 10px 20px; font-size: 0.88rem;">
+                <i class="fa-solid fa-user-plus"></i> Self-Register
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- ABOUT THE PROJECT SECTION -->
+<div class="glass-card">
+    <h2 style="font-size: 1.5rem; margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+        <i class="fa-solid fa-circle-info" style="color: var(--primary);"></i> About the System
+    </h2>
+    <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.7; margin-bottom: 16px;">
+        This system provides immutable, transparent tracking of goods across multi-tier supply chain networks. By leveraging smart contract state machine governance, raw material suppliers, manufacturers, regional distributors, retailers, and end consumers collaborate seamlessly while maintaining absolute data integrity.
+    </p>
+    <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.7;">
+        In the event of supply chain delays, capacity breaches, or operational bottlenecks, the integrated <strong>Disruption Engine</strong> automatically detects anomalies, recalculates projected delivery dates, and ranks candidate replacement participants using multi-factor scoring algorithms.
+    </p>
+</div>
+
+<!-- KEY SYSTEM FEATURES GRID -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-bottom: 32px;">
+    <div class="glass-card" style="margin-bottom: 0;">
+        <div class="stat-icon indigo" style="margin-bottom: 16px;"><i class="fa-solid fa-file-contract"></i></div>
+        <h3 style="font-size: 1.2rem; margin-bottom: 8px;">Solidity Smart Contracts</h3>
+        <p style="color: var(--text-muted); font-size: 0.88rem; line-height: 1.6;">
+            All user role approvals, raw material specs, finished products, order milestones, and leg status transitions are recorded immutably on the Ethereum blockchain.
+        </p>
+    </div>
+
+    <div class="glass-card" style="margin-bottom: 0;">
+        <div class="stat-icon rose" style="margin-bottom: 16px;"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <h3 style="font-size: 1.2rem; margin-bottom: 8px;">Automated Disruption Engine</h3>
+        <p style="color: var(--text-muted); font-size: 0.88rem; line-height: 1.6;">
+            Rule-based background scanner evaluates delivery deadlines, flags delayed shipment legs, calculates downstream impact, and ranks alternative replacement candidates.
+        </p>
+    </div>
+
+    <div class="glass-card" style="margin-bottom: 0;">
+        <div class="stat-icon emerald" style="margin-bottom: 16px;"><i class="fa-solid fa-shield-halved"></i></div>
+        <h3 style="font-size: 1.2rem; margin-bottom: 8px;">AES-GCM & IPFS Encryption</h3>
+        <p style="color: var(--text-muted); font-size: 0.88rem; line-height: 1.6;">
+            Sensitive documents (quality certificates, delivery invoices) are encrypted client/server side using 256-bit AES GCM before pinning to IPFS/Pinata.
+        </p>
+    </div>
+
+    <div class="glass-card" style="margin-bottom: 0;">
+        <div class="stat-icon cyan" style="margin-bottom: 16px;"><i class="fa-solid fa-route"></i></div>
+        <h3 style="font-size: 1.2rem; margin-bottom: 8px;">End-to-End Traceability</h3>
+        <p style="color: var(--text-muted); font-size: 0.88rem; line-height: 1.6;">
+            Complete 4-leg shipment timeline tracking, providing full audit history, verified participant addresses, and real-time order status updates.
+        </p>
+    </div>
+</div>
+
+<!-- 4-LEG PROCESS & FLOW SECTION -->
+<div class="glass-card">
+    <h2 style="font-size: 1.5rem; margin-bottom: 8px;">Four-Leg Supply Chain Execution Process</h2>
+    <p style="color: var(--text-muted); margin-bottom: 24px; font-size: 0.92rem;">
+        Sequential order lifecycle execution from raw material registration to last-mile consumer delivery.
+    </p>
+    
+    <div class="timeline-stepper">
+        <div class="step-item completed">
+            <div class="step-node"><i class="fa-solid fa-cart-shopping"></i></div>
+            <div class="step-label">Consumer Order</div>
+            <div class="step-sublabel">Order Placement</div>
+        </div>
+        <div class="step-item active">
+            <div class="step-node">1</div>
+            <div class="step-label">Leg 1</div>
+            <div class="step-sublabel">Supplier &rarr; Manufacturer</div>
+        </div>
+        <div class="step-item">
+            <div class="step-node">2</div>
+            <div class="step-label">Leg 2</div>
+            <div class="step-sublabel">Manufacturer &rarr; Distributor</div>
+        </div>
+        <div class="step-item">
+            <div class="step-node">3</div>
+            <div class="step-label">Leg 3</div>
+            <div class="step-sublabel">Distributor &rarr; Retailer</div>
+        </div>
+        <div class="step-item">
+            <div class="step-node">4</div>
+            <div class="step-label">Leg 4</div>
+            <div class="step-sublabel">Retailer &rarr; Consumer</div>
+        </div>
+    </div>
+</div>
+
+<!-- PARTICIPANT ROLES BREAKDOWN -->
+<div class="glass-card">
+    <h3 style="font-size: 1.3rem; margin-bottom: 16px;"><i class="fa-solid fa-users" style="color: var(--primary);"></i> Multi-Role Capabilities</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px;">
+        <div style="padding: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-md);">
+            <strong style="color: #0284c7; display: block; margin-bottom: 4px;"><i class="fa-solid fa-user-shield"></i> System Admin</strong>
+            <span style="font-size: 0.85rem; color: var(--text-muted);">Approve/reject participant registrations, inspect system audit logs, and view real-time network analytics.</span>
+        </div>
+        <div style="padding: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-md);">
+            <strong style="color: #4f46e5; display: block; margin-bottom: 4px;"><i class="fa-solid fa-boxes-packing"></i> Raw Material Supplier</strong>
+            <span style="font-size: 0.85rem; color: var(--text-muted);">Register raw materials, declare production capacity, and dispatch Leg 1 shipments to manufacturers.</span>
+        </div>
+        <div style="padding: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-md);">
+            <strong style="color: #7c3aed; display: block; margin-bottom: 4px;"><i class="fa-solid fa-industry"></i> Manufacturer</strong>
+            <span style="font-size: 0.85rem; color: var(--text-muted);">Register finished product catalog, assign suppliers/distributors, and dispatch Leg 2 shipments.</span>
+        </div>
+        <div style="padding: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-md);">
+            <strong style="color: #059669; display: block; margin-bottom: 4px;"><i class="fa-solid fa-truck-fast"></i> Regional Distributor</strong>
+            <span style="font-size: 0.85rem; color: var(--text-muted);">Assign regional retail outlets and dispatch Leg 3 shipments to retail stores.</span>
+        </div>
+        <div style="padding: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-md);">
+            <strong style="color: #d97706; display: block; margin-bottom: 4px;"><i class="fa-solid fa-store"></i> Retail Store</strong>
+            <span style="font-size: 0.85rem; color: var(--text-muted);">Receive inventory and execute final Leg 4 last-mile consumer delivery completion.</span>
+        </div>
+        <div style="padding: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-md);">
+            <strong style="color: #e11d48; display: block; margin-bottom: 4px;"><i class="fa-solid fa-bag-shopping"></i> Consumer</strong>
+            <span style="font-size: 0.85rem; color: var(--text-muted);">Browse product catalog, place orders, and trace complete end-to-end shipment progress timeline.</span>
+        </div>
+    </div>
+</div>
+{% endblock %}

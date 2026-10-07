@@ -1,0 +1,77 @@
+{% extends "layout.html" %}
+{% set active_page = "dashboard" %}
+
+{% block title %}Retailer Store Dashboard{% endblock %}
+
+{% block content %}
+<div class="top-bar">
+    <div>
+        <h1 class="page-title"><i class="fa-solid fa-store" style="color: var(--primary);"></i> Retailer Store & Leg 4 Delivery</h1>
+        <p class="page-desc">Final Leg Delivery Fulfillment to End Consumer</p>
+    </div>
+</div>
+
+<div class="glass-card">
+    <h3><i class="fa-solid fa-house-chimney-crack" style="color: var(--primary);"></i> Consumer Orders & Leg 4 Status</h3>
+    <div class="table-responsive">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Order ID</th>
+                    <th>Product</th>
+                    <th>Consumer ETH Address</th>
+                    <th>Leg 4 Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for o in orders %}
+                <tr>
+                    <td><strong>{{ o.orderId }}</strong></td>
+                    <td>{{ o.productId }}</td>
+                    <td><span class="address-code">{{ o.consumerAddress[:8] }}...</span></td>
+                    <td>
+                        {% set leg4 = leg4_map.get(o.orderId) %}
+                        {% if leg4 %}
+                            <span class="badge {% if leg4.status_str == 'DELIVERED' %}badge-approved{% elif leg4.status_str == 'DELAYED' or leg4.status_str == 'DISRUPTED' %}badge-rejected{% else %}badge-info{% endif %}">
+                                {{ leg4.status_str }}
+                            </span>
+                        {% else %}
+                            <span class="badge badge-pending">LEG 4 NOT CREATED</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% set leg4 = leg4_map.get(o.orderId) %}
+                        {% if not leg4 %}
+                        <form action="{{ url_for('create_leg4_route') }}" method="POST" style="display: flex; gap: 6px;">
+                            <input type="hidden" name="order_id" value="{{ o.orderId }}">
+                            <input type="hidden" name="to_address" value="{{ o.consumerAddress }}">
+                            <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-truck"></i> Start Leg 4 Delivery</button>
+                        </form>
+                        {% else %}
+                        <form action="{{ url_for('update_leg_status_route') }}" method="POST" style="display: flex; gap: 6px; align-items: center;">
+                            <input type="hidden" name="leg_id" value="{{ leg4.legId }}">
+                            <select name="status_int" class="form-select" style="padding: 4px; font-size: 0.78rem;">
+                                <option value="1" {% if leg4.status_int == 1 %}selected{% endif %}>PREPARING</option>
+                                <option value="2" {% if leg4.status_int == 2 %}selected{% endif %}>SHIPPED</option>
+                                <option value="3" {% if leg4.status_int == 3 %}selected{% endif %}>IN_TRANSIT</option>
+                                <option value="4" {% if leg4.status_int == 4 %}selected{% endif %}>DELAYED</option>
+                                <option value="5" {% if leg4.status_int == 5 %}selected{% endif %}>DELIVERED</option>
+                            </select>
+                            <button type="submit" class="btn btn-secondary btn-sm"><i class="fa-solid fa-rotate"></i> Update</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 20px;">
+                        No orders assigned to this retailer store.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

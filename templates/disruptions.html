@@ -1,0 +1,139 @@
+{% extends "layout.html" %}
+{% set active_page = "disruptions" %}
+
+{% block title %}Disruption & Recovery Center{% endblock %}
+
+{% block content %}
+<div class="top-bar">
+    <div>
+        <h1 class="page-title"><i class="fa-solid fa-triangle-exclamation" style="color: var(--accent-rose);"></i> Disruption & Recovery Engine</h1>
+        <p class="page-desc">Automated Rule-Based Disruption Detection & Ranked Participant Replacement</p>
+    </div>
+    <div class="top-actions">
+        <form action="{{ url_for('run_disruption_check_route') }}" method="POST">
+            <button type="submit" class="btn btn-danger"><i class="fa-solid fa-bolt"></i> Run Disruption Scanner</button>
+        </form>
+    </div>
+</div>
+
+<!-- RECORDED DISRUPTIONS LIST -->
+<div class="glass-card">
+    <h3><i class="fa-solid fa-triangle-exclamation" style="color: var(--accent-rose);"></i> Recorded Supply Chain Disruptions</h3>
+    <div class="table-responsive">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Disruption ID</th>
+                    <th>Order ID</th>
+                    <th>Leg ID</th>
+                    <th>Reported By</th>
+                    <th>Disruption Type</th>
+                    <th>Description</th>
+                    <th>Actions / Recommendations</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in disruptions %}
+                <tr>
+                    <td><span class="address-code">{{ d.disruptionId }}</span></td>
+                    <td><strong>{{ d.orderId }}</strong></td>
+                    <td><span class="badge badge-pending">{{ d.legId or 'SYSTEM' }}</span></td>
+                    <td><span class="address-code">{{ d.reportedBy[:8] }}...</span></td>
+                    <td><span class="badge badge-rejected">{{ d.disruptionType }}</span></td>
+                    <td>{{ d.description }}</td>
+                    <td>
+                        <a href="{{ url_for('recommendations_route', order_id=d.orderId, leg_id=d.legId) }}" class="btn btn-primary btn-sm">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> View Recommendations
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 20px;">
+                        No disruptions recorded. Click "Run Disruption Scanner" to execute automated rules.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- RECOMMENDATIONS MODAL VIEW IF GENERATED -->
+{% if active_recommendations %}
+<div class="glass-card" style="border: 1px solid var(--primary-glow);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div>
+            <h2><i class="fa-solid fa-brain" style="color: var(--primary);"></i> Recommended Replacements for Order: <span style="color: var(--primary);">{{ target_order_id }}</span></h2>
+            <p style="color: var(--text-muted); font-size: 0.88rem;">Rule-based rank based on capacity, lead time, availability, and past disruption scores.</p>
+        </div>
+        <div class="badge badge-info" style="font-size: 0.85rem; padding: 6px 12px;">TARGET ROLE: {{ target_role }}</div>
+    </div>
+
+    <!-- Downstream Impact Summary -->
+    {% if impact_analysis %}
+    <div style="background: #fff1f2; border: 1px solid #fecdd3; border-radius: var(--radius-md); padding: 16px; margin-bottom: 20px;">
+        <h4 style="color: #be123c; margin-bottom: 8px;"><i class="fa-solid fa-chart-line"></i> Downstream Impact Analysis</h4>
+        <div style="font-size: 0.88rem; color: #0f172a;">
+            Order <strong>{{ impact_analysis.order_id }}</strong> is delayed by <strong>{{ impact_analysis.delay_days }} days</strong>.
+            Projected consumer delivery date moved to: <strong style="color: #b45309;">{{ impact_analysis.projected_delivery_date }}</strong>.
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="table-responsive">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Rank Score</th>
+                    <th>Candidate Username</th>
+                    <th>ETH Address</th>
+                    <th>Capacity</th>
+                    <th>Lead Time</th>
+                    <th>Past Disruptions</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for candidate in active_recommendations %}
+                <tr>
+                    <td>
+                        <strong style="color: var(--accent-emerald); font-size: 1.1rem;">{{ candidate.score }}</strong>
+                        <span class="badge badge-approved" style="margin-left: 6px;">{{ candidate.recommendation_level }}</span>
+                    </td>
+                    <td><strong>{{ candidate.username }}</strong></td>
+                    <td><span class="address-code">{{ candidate.ethAddress }}</span></td>
+                    <td>{{ candidate.capacity }} units</td>
+                    <td>{{ candidate.lead_time_days }} days</td>
+                    <td><span class="badge {% if candidate.past_disruptions == 0 %}badge-approved{% else %}badge-pending{% endif %}">{{ candidate.past_disruptions }}</span></td>
+                    <td>
+                        {% if session.get('role') in ['MANUFACTURER', 'DISTRIBUTOR', 'RETAILER', 'SUPPLIER', 'ADMIN'] %}
+                        <form action="{{ url_for('confirm_replacement_route') }}" method="POST" style="margin: 0;">
+                            <input type="hidden" name="order_id" value="{{ target_order_id }}">
+                            <input type="hidden" name="role" value="{{ target_role }}">
+                            <input type="hidden" name="new_participant_addr" value="{{ candidate.ethAddress }}">
+                            <input type="hidden" name="reason" value="Replaced due to leg disruption via Rule Engine (Rank Score: {{ candidate.score }})">
+                            <button type="submit" class="btn btn-success btn-sm" style="white-space: nowrap;">
+                                <i class="fa-solid fa-check-double"></i> Confirm & Switch on Chain
+                            </button>
+                        </form>
+                        {% else %}
+                        <a href="{{ url_for('login') }}" class="btn btn-outline btn-sm">
+                            <i class="fa-solid fa-lock"></i> Login to Confirm
+                        </a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 20px;">
+                        No approved alternate candidates available for role {{ target_role }}.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

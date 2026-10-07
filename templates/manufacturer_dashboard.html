@@ -1,0 +1,192 @@
+{% extends "layout.html" %}
+{% set active_page = "dashboard" %}
+
+{% block title %}Manufacturer Operations{% endblock %}
+
+{% block content %}
+<div class="top-bar">
+    <div>
+        <h1 class="page-title"><i class="fa-solid fa-industry" style="color: var(--primary);"></i> Manufacturer Operations</h1>
+        <p class="page-desc">Product Catalog, Supplier/Distributor Assignment, and Leg 2 Fulfillment</p>
+    </div>
+    <div class="top-actions">
+        <button onclick="openModal('addProductModal')" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Register Finished Product</button>
+    </div>
+</div>
+
+<!-- REGISTERED PRODUCTS -->
+<div class="glass-card">
+    <h3><i class="fa-solid fa-microchip" style="color: var(--primary);"></i> Finished Products Directory</h3>
+    <div class="table-responsive">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Product ID</th>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Price</th>
+                    <th>Required Materials</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in products %}
+                <tr>
+                    <td><span class="address-code">{{ p.id }}</span></td>
+                    <td><strong>{{ p.name }}</strong></td>
+                    <td>{{ p.category }}</td>
+                    <td><strong style="color: var(--primary);">${{ p.price }}</strong></td>
+                    <td>
+                        {% for m_id in p.requiredMaterialIds %}
+                            <span class="badge badge-info">{{ m_id }}</span>
+                        {% endfor %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 20px;">
+                        No finished products registered. Click "Register Finished Product" to add.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- CONSUMER ORDERS & ASSIGNMENT -->
+<div class="glass-card">
+    <h3><i class="fa-solid fa-cart-flatbed" style="color: var(--accent-indigo);"></i> Orders & Leg 2 Fulfillment</h3>
+    <div class="table-responsive">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Order ID</th>
+                    <th>Product</th>
+                    <th>Quantity</th>
+                    <th>Assigned Supplier</th>
+                    <th>Assigned Distributor</th>
+                    <th>Order Status</th>
+                    <th>Leg 2 Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for o in orders %}
+                <tr>
+                    <td><strong>{{ o.orderId }}</strong></td>
+                    <td>{{ o.productId }}</td>
+                    <td>{{ o.quantity }}</td>
+                    <td>
+                        {% if o.supplierAddress and o.supplierAddress != '0x0000000000000000000000000000000000000000' %}
+                            <span class="address-code">{{ o.supplierAddress[:8] }}...</span>
+                        {% else %}
+                            <span class="badge badge-pending">UNASSIGNED</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if o.distributorAddress and o.distributorAddress != '0x0000000000000000000000000000000000000000' %}
+                            <span class="address-code">{{ o.distributorAddress[:8] }}...</span>
+                        {% else %}
+                            <span class="badge badge-pending">UNASSIGNED</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge {% if o.status_str == 'DELIVERED' %}badge-approved{% elif o.status_str == 'DISRUPTED' %}badge-rejected{% else %}badge-info{% endif %}">
+                            {{ o.status_str }}
+                        </span>
+                    </td>
+                    <td>
+                        {% set leg2 = leg2_map.get(o.orderId) %}
+                        {% if leg2 %}
+                            <span class="badge badge-info">{{ leg2.status_str }}</span>
+                        {% else %}
+                            <span class="badge badge-pending">NOT STARTED</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if not o.supplierAddress or o.supplierAddress == '0x0000000000000000000000000000000000000000' %}
+                        <form action="{{ url_for('assign_supplier_distributor_route') }}" method="POST" style="display: flex; flex-direction: column; gap: 6px;">
+                            <input type="hidden" name="order_id" value="{{ o.orderId }}">
+                            <select name="supplier_addr" class="form-select" style="padding: 4px; font-size: 0.78rem;" required>
+                                <option value="">Select Supplier...</option>
+                                {% for s in suppliers %}
+                                    <option value="{{ s.ethAddress }}">{{ s.username }} ({{ s.ethAddress[:6] }}...)</option>
+                                {% endfor %}
+                            </select>
+                            <select name="distributor_addr" class="form-select" style="padding: 4px; font-size: 0.78rem;" required>
+                                <option value="">Select Distributor...</option>
+                                {% for d in distributors %}
+                                    <option value="{{ d.ethAddress }}">{{ d.username }} ({{ d.ethAddress[:6] }}...)</option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-link"></i> Assign & Save Leg 1-2</button>
+                        </form>
+                        {% else %}
+                            {% set leg2 = leg2_map.get(o.orderId) %}
+                            {% if not leg2 %}
+                            <form action="{{ url_for('create_leg2_route') }}" method="POST" style="display: flex; gap: 6px;">
+                                <input type="hidden" name="order_id" value="{{ o.orderId }}">
+                                <input type="hidden" name="to_address" value="{{ o.distributorAddress }}">
+                                <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-play"></i> Start Leg 2</button>
+                            </form>
+                            {% else %}
+                            <form action="{{ url_for('update_leg_status_route') }}" method="POST" style="display: flex; gap: 6px; align-items: center;">
+                                <input type="hidden" name="leg_id" value="{{ leg2.legId }}">
+                                <select name="status_int" class="form-select" style="padding: 4px; font-size: 0.78rem;">
+                                    <option value="1" {% if leg2.status_int == 1 %}selected{% endif %}>PREPARING</option>
+                                    <option value="2" {% if leg2.status_int == 2 %}selected{% endif %}>SHIPPED</option>
+                                    <option value="3" {% if leg2.status_int == 3 %}selected{% endif %}>IN_TRANSIT</option>
+                                    <option value="4" {% if leg2.status_int == 4 %}selected{% endif %}>DELAYED</option>
+                                    <option value="5" {% if leg2.status_int == 5 %}selected{% endif %}>DELIVERED</option>
+                                </select>
+                                <button type="submit" class="btn btn-secondary btn-sm"><i class="fa-solid fa-rotate"></i> Update</button>
+                            </form>
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 20px;">
+                        No consumer orders routed to this manufacturer.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- MODAL: ADD PRODUCT -->
+<div class="modal-overlay" id="addProductModal">
+    <div class="modal-box">
+        <h3 style="margin-bottom: 16px;"><i class="fa-solid fa-layer-group" style="color: var(--primary);"></i> Register Finished Product</h3>
+        <form action="{{ url_for('save_product_route') }}" method="POST">
+            <div class="form-group">
+                <label class="form-label">Product ID</label>
+                <input type="text" name="id" class="form-control" placeholder="PROD-501" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Product Name</label>
+                <input type="text" name="name" class="form-control" placeholder="NextGen AI Laptop / Electric Scooter" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Category</label>
+                <input type="text" name="category" class="form-control" placeholder="Consumer Electronics" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Price ($)</label>
+                <input type="number" name="price" class="form-control" value="1200" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Required Material IDs (Comma separated)</label>
+                <input type="text" name="required_materials" class="form-control" placeholder="MAT-101, MAT-102" required>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px;">
+                <button type="button" onclick="closeModal('addProductModal')" class="btn btn-secondary">Cancel</button>
+                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-save"></i> Save Product to Chain</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

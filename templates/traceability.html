@@ -1,0 +1,145 @@
+{% extends "layout.html" %}
+{% set active_page = "traceability" %}
+
+{% block title %}Order Traceability & Audit Path{% endblock %}
+
+{% block content %}
+<div class="top-bar">
+    <div>
+        <h1 class="page-title"><i class="fa-solid fa-route" style="color: var(--primary);"></i> Supply Chain Traceability</h1>
+        <p class="page-desc">End-to-End Cryptographic Audit & Leg Path Tracking</p>
+    </div>
+</div>
+
+<div class="glass-card">
+    <form action="{{ url_for('traceability') }}" method="GET" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 250px;">
+            <input type="text" name="search_id" class="form-control" placeholder="Search Order ID, Product ID, or Leg ID..." value="{{ search_id or '' }}">
+        </div>
+        {% if all_orders %}
+        <div style="min-width: 220px;">
+            <select onchange="if(this.value) window.location.href='{{ url_for('traceability') }}?search_id='+this.value" class="form-select">
+                <option value="">-- Quick Select Order --</option>
+                {% for o in all_orders %}
+                <option value="{{ o.orderId }}" {% if target_order and o.orderId == target_order.orderId %}selected{% endif %}>
+                    Order #{{ o.orderId }} ({{ o.productId }})
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-magnifying-glass"></i> Search Path</button>
+    </form>
+</div>
+
+{% if target_order %}
+<div class="glass-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div>
+            <h2>Order Path: <span style="color: var(--primary);">{{ target_order.orderId }}</span></h2>
+            <div style="font-size: 0.88rem; color: var(--text-muted); margin-top: 4px;">
+                Product: <strong>{{ target_order.productId }}</strong> | Quantity: <strong>{{ target_order.quantity }}</strong>
+            </div>
+        </div>
+        <div>
+            <span class="badge {% if target_order.status_str == 'DELIVERED' %}badge-approved{% elif target_order.status_str == 'DISRUPTED' %}badge-rejected{% else %}badge-info{% endif %}" style="font-size: 0.9rem; padding: 6px 14px;">
+                STATUS: {{ target_order.status_str }}
+            </span>
+        </div>
+    </div>
+
+    <!-- 4-LEG VISUAL TIMELINE -->
+    <div class="timeline-stepper">
+        <!-- Consumer -->
+        <div class="step-item completed">
+            <div class="step-node"><i class="fa-solid fa-cart-shopping"></i></div>
+            <div class="step-label">Consumer</div>
+            <div class="step-sublabel">{{ target_order.consumerAddress[:6] }}...</div>
+        </div>
+        <!-- Leg 1: Supplier -> Mfg -->
+        {% set l1 = legs_by_type.get('LEG1_SUPPLIER_TO_MFG') %}
+        <div class="step-item {% if l1 %}{% if l1.status_str == 'DELIVERED' %}completed{% elif l1.status_str == 'DELAYED' or l1.status_str == 'DISRUPTED' %}disrupted{% else %}active{% endif %}{% endif %}">
+            <div class="step-node">1</div>
+            <div class="step-label">Leg 1: Supplier</div>
+            <div class="step-sublabel">{{ l1.status_str if l1 else 'Not Started' }}</div>
+        </div>
+        <!-- Leg 2: Mfg -> Dist -->
+        {% set l2 = legs_by_type.get('LEG2_MFG_TO_DISTRIBUTOR') %}
+        <div class="step-item {% if l2 %}{% if l2.status_str == 'DELIVERED' %}completed{% elif l2.status_str == 'DELAYED' or l2.status_str == 'DISRUPTED' %}disrupted{% else %}active{% endif %}{% endif %}">
+            <div class="step-node">2</div>
+            <div class="step-label">Leg 2: Mfg</div>
+            <div class="step-sublabel">{{ l2.status_str if l2 else 'Not Started' }}</div>
+        </div>
+        <!-- Leg 3: Dist -> Ret -->
+        {% set l3 = legs_by_type.get('LEG3_DISTRIBUTOR_TO_RETAILER') %}
+        <div class="step-item {% if l3 %}{% if l3.status_str == 'DELIVERED' %}completed{% elif l3.status_str == 'DELAYED' or l3.status_str == 'DISRUPTED' %}disrupted{% else %}active{% endif %}{% endif %}">
+            <div class="step-node">3</div>
+            <div class="step-label">Leg 3: Distributor</div>
+            <div class="step-sublabel">{{ l3.status_str if l3 else 'Not Started' }}</div>
+        </div>
+        <!-- Leg 4: Ret -> Consumer -->
+        {% set l4 = legs_by_type.get('LEG4_RETAILER_TO_CONSUMER') %}
+        <div class="step-item {% if l4 %}{% if l4.status_str == 'DELIVERED' %}completed{% elif l4.status_str == 'DELAYED' or l4.status_str == 'DISRUPTED' %}disrupted{% else %}active{% endif %}{% endif %}">
+            <div class="step-node">4</div>
+            <div class="step-label">Leg 4: Retailer</div>
+            <div class="step-sublabel">{{ l4.status_str if l4 else 'Not Started' }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- DETAILED LEGS TABLE -->
+<div class="glass-card">
+    <h3><i class="fa-solid fa-list-check" style="color: var(--primary);"></i> Shipment Leg Audit History</h3>
+    <div class="table-responsive">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Leg ID</th>
+                    <th>Type</th>
+                    <th>From</th>
+                    <th>To</th>
+                    <th>Status</th>
+                    <th>Expected Date</th>
+                    <th>IPFS Doc Hash</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for leg in order_legs %}
+                <tr>
+                    <td><span class="address-code">{{ leg.legId }}</span></td>
+                    <td><span class="badge badge-info">{{ leg.legType_str }}</span></td>
+                    <td><span class="address-code">{{ leg.fromAddress[:8] }}...</span></td>
+                    <td><span class="address-code">{{ leg.toAddress[:8] }}...</span></td>
+                    <td>
+                        <span class="badge {% if leg.status_str == 'DELIVERED' %}badge-approved{% elif leg.status_str == 'DELAYED' or leg.status_str == 'DISRUPTED' %}badge-rejected{% else %}badge-info{% endif %}">
+                            {{ leg.status_str }}
+                        </span>
+                    </td>
+                    <td>{{ leg.expectedDate }}</td>
+                    <td><span class="address-code">{{ leg.documentHash[:14] if leg.documentHash else 'N/A' }}</span></td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 20px;">
+                        No legs generated for this order yet.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% elif search_id %}
+<div class="glass-card" style="text-align: center; padding: 40px;">
+    <i class="fa-solid fa-magnifying-glass" style="font-size: 2.5rem; color: var(--text-dim); margin-bottom: 12px;"></i>
+    <h3>No Order Found Matching "{{ search_id }}"</h3>
+    <p style="color: var(--text-muted);">Please check the ID and try searching again.</p>
+</div>
+{% else %}
+<div class="glass-card" style="text-align: center; padding: 40px;">
+    <i class="fa-solid fa-route" style="font-size: 2.5rem; color: var(--primary); margin-bottom: 12px;"></i>
+    <h3>Enter Order ID to Trace Supply Chain Path</h3>
+    <p style="color: var(--text-muted);">Use the search bar above to trace all four legs, participant addresses, timestamps, and disruptions.</p>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,99 @@
+{% extends "layout.html" %}
+{% set active_page = "dashboard" %}
+
+{% block title %}Distributor Logistics{% endblock %}
+
+{% block content %}
+<div class="top-bar">
+    <div>
+        <h1 class="page-title"><i class="fa-solid fa-truck-fast" style="color: var(--primary);"></i> Distributor Logistics</h1>
+        <p class="page-desc">Retailer Assignment & Leg 3 Regional Distribution</p>
+    </div>
+</div>
+
+<!-- ASSIGNED ORDERS & LEG 3 fulfillment -->
+<div class="glass-card">
+    <h3><i class="fa-solid fa-boxes-stacked" style="color: var(--primary);"></i> Assigned Distribution Orders</h3>
+    <div class="table-responsive">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Order ID</th>
+                    <th>Product</th>
+                    <th>Quantity</th>
+                    <th>Manufacturer</th>
+                    <th>Assigned Retailer</th>
+                    <th>Leg 3 Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for o in orders %}
+                <tr>
+                    <td><strong>{{ o.orderId }}</strong></td>
+                    <td>{{ o.productId }}</td>
+                    <td>{{ o.quantity }}</td>
+                    <td><span class="address-code">{{ o.manufacturerAddress[:8] }}...</span></td>
+                    <td>
+                        {% if o.retailerAddress and o.retailerAddress != '0x0000000000000000000000000000000000000000' %}
+                            <span class="address-code">{{ o.retailerAddress[:8] }}...</span>
+                        {% else %}
+                            <span class="badge badge-pending">RETAILER UNASSIGNED</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% set leg3 = leg3_map.get(o.orderId) %}
+                        {% if leg3 %}
+                            <span class="badge badge-info">{{ leg3.status_str }}</span>
+                        {% else %}
+                            <span class="badge badge-pending">LEG 3 NOT STARTED</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if not o.retailerAddress or o.retailerAddress == '0x0000000000000000000000000000000000000000' %}
+                        <form action="{{ url_for('assign_retailer_route') }}" method="POST" style="display: flex; gap: 8px;">
+                            <input type="hidden" name="order_id" value="{{ o.orderId }}">
+                            <select name="retailer_addr" class="form-select" style="padding: 4px; font-size: 0.78rem;" required>
+                                <option value="">Select Retailer...</option>
+                                {% for r in retailers %}
+                                    <option value="{{ r.ethAddress }}">{{ r.username }} ({{ r.ethAddress[:6] }}...)</option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-store"></i> Assign Retailer</button>
+                        </form>
+                        {% else %}
+                            {% set leg3 = leg3_map.get(o.orderId) %}
+                            {% if not leg3 %}
+                            <form action="{{ url_for('create_leg3_route') }}" method="POST" style="display: flex; gap: 6px;">
+                                <input type="hidden" name="order_id" value="{{ o.orderId }}">
+                                <input type="hidden" name="to_address" value="{{ o.retailerAddress }}">
+                                <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-play"></i> Start Leg 3</button>
+                            </form>
+                            {% else %}
+                            <form action="{{ url_for('update_leg_status_route') }}" method="POST" style="display: flex; gap: 6px; align-items: center;">
+                                <input type="hidden" name="leg_id" value="{{ leg3.legId }}">
+                                <select name="status_int" class="form-select" style="padding: 4px; font-size: 0.78rem;">
+                                    <option value="1" {% if leg3.status_int == 1 %}selected{% endif %}>PREPARING</option>
+                                    <option value="2" {% if leg3.status_int == 2 %}selected{% endif %}>SHIPPED</option>
+                                    <option value="3" {% if leg3.status_int == 3 %}selected{% endif %}>IN_TRANSIT</option>
+                                    <option value="4" {% if leg3.status_int == 4 %}selected{% endif %}>DELAYED</option>
+                                    <option value="5" {% if leg3.status_int == 5 %}selected{% endif %}>DELIVERED</option>
+                                </select>
+                                <button type="submit" class="btn btn-secondary btn-sm"><i class="fa-solid fa-rotate"></i> Update</button>
+                            </form>
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 20px;">
+                        No orders assigned to this distributor yet.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

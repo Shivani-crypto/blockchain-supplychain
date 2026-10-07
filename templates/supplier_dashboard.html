@@ -1,0 +1,164 @@
+{% extends "layout.html" %}
+{% set active_page = "dashboard" %}
+
+{% block title %}Supplier Workspace{% endblock %}
+
+{% block content %}
+<div class="top-bar">
+    <div>
+        <h1 class="page-title"><i class="fa-solid fa-boxes-packing" style="color: var(--primary);"></i> Supplier Workspace</h1>
+        <p class="page-desc">Raw Material Registration & Leg 1 Shipment Management</p>
+    </div>
+    <div class="top-actions">
+        <button onclick="openModal('addMaterialModal')" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Register New Material</button>
+    </div>
+</div>
+
+<!-- REGISTERED MATERIALS -->
+<div class="glass-card">
+    <h3><i class="fa-solid fa-cubes" style="color: var(--primary);"></i> My Registered Raw Materials</h3>
+    <div class="table-responsive">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Material ID</th>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Capacity</th>
+                    <th>Lead Time</th>
+                    <th>IPFS Doc Hash</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in materials %}
+                <tr>
+                    <td><span class="address-code">{{ m.id }}</span></td>
+                    <td><strong>{{ m.name }}</strong></td>
+                    <td>{{ m.category }}</td>
+                    <td><strong style="color: var(--accent-emerald);">{{ m.capacity }} units</strong></td>
+                    <td>{{ m.leadTimeDays }} days</td>
+                    <td><span class="address-code">{{ m.documentIpfsHash[:14] }}...</span></td>
+                    <td><span class="badge badge-approved">{{ m.status }}</span></td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 20px;">
+                        No raw materials registered on chain yet. Click "Register New Material" to add.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ASSIGNED ORDERS & LEG 1 SHIPMENTS -->
+<div class="glass-card">
+    <h3><i class="fa-solid fa-truck-ramp-box" style="color: var(--accent-indigo);"></i> Leg 1 Shipments (Supplier &rarr; Manufacturer)</h3>
+    <div class="table-responsive">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Order ID</th>
+                    <th>Product</th>
+                    <th>Quantity</th>
+                    <th>Manufacturer</th>
+                    <th>Leg 1 Status</th>
+                    <th>Expected Date</th>
+                    <th>Action / Status Update</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for o in assigned_orders %}
+                <tr>
+                    <td><strong>{{ o.orderId }}</strong></td>
+                    <td>{{ o.productId }}</td>
+                    <td>{{ o.quantity }}</td>
+                    <td><span class="address-code">{{ o.manufacturerAddress[:8] }}...</span></td>
+                    <td>
+                        {% set leg1 = leg1_map.get(o.orderId) %}
+                        {% if leg1 %}
+                            <span class="badge {% if leg1.status_str == 'DELIVERED' %}badge-approved{% elif leg1.status_str == 'DELAYED' or leg1.status_str == 'DISRUPTED' %}badge-rejected{% else %}badge-info{% endif %}">
+                                {{ leg1.status_str }}
+                            </span>
+                        {% else %}
+                            <span class="badge badge-pending">LEG 1 NOT CREATED</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ o.expectedDeliveryDate }}</td>
+                    <td>
+                        {% set leg1 = leg1_map.get(o.orderId) %}
+                        {% if not leg1 %}
+                        <form action="{{ url_for('create_leg1_route') }}" method="POST" style="display: flex; gap: 8px;">
+                            <input type="hidden" name="order_id" value="{{ o.orderId }}">
+                            <input type="hidden" name="to_address" value="{{ o.manufacturerAddress }}">
+                            <input type="number" name="expected_days" class="form-control" style="width: 80px; padding: 4px 8px;" value="3" title="Expected Days">
+                            <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-play"></i> Start Leg 1</button>
+                        </form>
+                        {% else %}
+                        <form action="{{ url_for('update_leg_status_route') }}" method="POST" style="display: flex; gap: 8px; align-items: center;">
+                            <input type="hidden" name="leg_id" value="{{ leg1.legId }}">
+                            <select name="status_int" class="form-select" style="padding: 4px 8px; font-size: 0.8rem;">
+                                <option value="1" {% if leg1.status_int == 1 %}selected{% endif %}>PREPARING</option>
+                                <option value="2" {% if leg1.status_int == 2 %}selected{% endif %}>SHIPPED</option>
+                                <option value="3" {% if leg1.status_int == 3 %}selected{% endif %}>IN_TRANSIT</option>
+                                <option value="4" {% if leg1.status_int == 4 %}selected{% endif %}>DELAYED</option>
+                                <option value="5" {% if leg1.status_int == 5 %}selected{% endif %}>DELIVERED</option>
+                            </select>
+                            <button type="submit" class="btn btn-secondary btn-sm"><i class="fa-solid fa-arrows-rotate"></i> Update</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 20px;">
+                        No assigned orders requiring Leg 1 material fulfillment.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- MODAL: ADD MATERIAL -->
+<div class="modal-overlay" id="addMaterialModal">
+    <div class="modal-box">
+        <h3 style="margin-bottom: 16px;"><i class="fa-solid fa-box-open" style="color: var(--primary);"></i> Register Raw Material on Blockchain</h3>
+        <form action="{{ url_for('save_material_route') }}" method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label class="form-label">Material ID</label>
+                <input type="text" name="id" class="form-control" placeholder="MAT-101" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Material Name</label>
+                <input type="text" name="name" class="form-control" placeholder="Silicon Microchips / Aluminum Alloy" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Category</label>
+                <input type="text" name="category" class="form-control" placeholder="Electronics / Metals / Polymers" required>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="form-group">
+                    <label class="form-label">Capacity (Units)</label>
+                    <input type="number" name="capacity" class="form-control" value="1000" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Lead Time (Days)</label>
+                    <input type="number" name="lead_time_days" class="form-control" value="3" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Material Quality Document / Cert (AES Encrypted + IPFS Upload)</label>
+                <input type="file" name="doc_file" class="form-control">
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px;">
+                <button type="button" onclick="closeModal('addMaterialModal')" class="btn btn-secondary">Cancel</button>
+                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-upload"></i> Encrypt & Save to Chain</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

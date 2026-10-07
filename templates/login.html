@@ -1,0 +1,50 @@
+{% extends "layout.html" %}
+{% set active_page = "login" %}
+
+{% block title %}Participant Login{% endblock %}
+
+{% block content %}
+<div style="max-width: 480px; margin: 40px auto;">
+    <div class="glass-card">
+        <div style="text-align: center; margin-bottom: 24px;">
+            <div class="brand-icon" style="margin: 0 auto 12px auto;"><i class="fa-solid fa-right-to-bracket"></i></div>
+            <h2>Participant Login</h2>
+            <p style="color: var(--text-muted); font-size: 0.88rem;">Authenticate to access your role dashboard</p>
+        </div>
+
+        <form action="{{ url_for('login') }}" method="POST">
+            <div class="form-group">
+                <label class="form-label">Participant Role</label>
+                <select name="role" class="form-select" required>
+                    <option value="SUPPLIER">Supplier</option>
+                    <option value="MANUFACTURER">Manufacturer</option>
+                    <option value="DISTRIBUTOR">Distributor</option>
+                    <option value="RETAILER">Retailer</option>
+                    <option value="CONSUMER" selected>Consumer</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Username</label>
+                <input type="text" name="username" class="form-control" placeholder="Enter username" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <input type="password" name="password" class="form-control" placeholder="Enter password" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 10px;">
+                <i class="fa-solid fa-right-to-bracket"></i> Log In
+            </button>
+        </form>
+
+        <div style="text-align: center; margin-top: 20px; font-size: 0.85rem; color: var(--text-muted);">
+            Don't have an account? <a href="{{ url_for('register') }}">Register here</a>
+        </div>
+        <div style="text-align: center; margin-top: 10px; font-size: 0.82rem; color: var(--text-muted); border-top: 1px solid var(--border-glass); padding-top: 12px;">
+            Are you an Administrator? <a href="{{ url_for('admin_login') }}" style="color: var(--accent-indigo); font-weight: 600;"><i class="fa-solid fa-user-shield"></i> Admin Login Portal</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

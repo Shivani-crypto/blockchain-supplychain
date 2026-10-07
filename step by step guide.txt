@@ -1,0 +1,196 @@
+========================================================================================
+   DECENTRALIZED SUPPLY CHAIN MANAGEMENT SYSTEM - STEP-BY-STEP EXECUTION GUIDE
+========================================================================================
+This guide provides the complete, end-to-end operational workflow for testing:
+  1. User Roles & Authentication
+  2. Normal Happy Path (Full 4-Leg Order Lifecycle)
+  3. Disruption Handling, AI/Rule-based Recovery, & Role Reassignment
+  4. End-to-End Traceability & Blockchain Audit Trail
+
+----------------------------------------------------------------------------------------
+SECTION 1: DEFAULT LOGIN CREDENTIALS
+----------------------------------------------------------------------------------------
+Portal URL: http://127.0.0.1:5000
+
+| Role         | Portal / Route | Username            | Password     | Key Responsibility                           |
+|--------------|----------------|---------------------|--------------|----------------------------------------------|
+| Admin        | /admin_login   | admin               | admin        | Approvals, system audits, user management    |
+| Supplier     | /login         | ApexMaterials       | supplier123  | Register raw materials, Leg 1 shipments      |
+| Manufacturer | /login         | OmniMfgCorp         | mfg123       | Register products, assign partners, Leg 2    |
+| Distributor  | /login         | ExpressDistributors | dist123      | Assign retailer, Leg 3 shipments             |
+| Retailer     | /login         | MetroRetailStore    | retailer123  | Leg 4 last-mile consumer delivery            |
+| Consumer     | /login         | JohnConsumer        | consumer123  | Browse catalog, submit purchase orders       |
+
+* Note: If you register custom accounts via /register, log in as Admin first to approve them.
+
+----------------------------------------------------------------------------------------
+SECTION 2: NORMAL HAPPY PATH (COMPLETE 4-LEG SHIPMENT FLOW)
+----------------------------------------------------------------------------------------
+
+STEP 2.1: SUPPLIER REGISTERS RAW MATERIAL
+  1. Open http://127.0.0.1:5000/login
+  2. Select Role: "Supplier", Username: "ApexMaterials", Password: "supplier123"
+  3. Under "My Registered Raw Materials", click "Register New Material".
+  4. Fill out the form:
+     - Material ID: MAT-101
+     - Name: Semiconductor Silicon
+     - Category: Electronics
+     - Batch Capacity: 1000
+     - Lead Time: 2 days
+  5. Click "Save Material on Blockchain".
+  6. Click "Logout".
+
+STEP 2.2: MANUFACTURER REGISTERS PRODUCT
+  1. Log in at /login with Role: "Manufacturer", Username: "OmniMfgCorp", Password: "mfg123"
+  2. Under "Finished Products Directory", click "Register Finished Product".
+  3. Fill out the form:
+     - Product ID: PROD-8001
+     - Name: Quantum X1 Processor
+     - Category: Hardware
+     - Unit Price ($): 1200
+     - Required Materials: Select MAT-101
+  4. Click "Register Product on Blockchain".
+  5. Click "Logout".
+
+STEP 2.3: CONSUMER PLACES AN ORDER
+  1. Log in at /login with Role: "Consumer", Username: "JohnConsumer", Password: "consumer123"
+  2. In the "Available Finished Products" catalog, click "Order Product" on "Quantum X1 Processor".
+  3. Enter:
+     - Quantity: 2
+     - Expected Delivery: 7 days
+  4. Click "Place Order on Blockchain".
+  5. Your new Order ID (e.g. ORD-1790665550) appears under "My Placed Orders" with status "WITH_MANUFACTURER".
+  6. Copy or note down the Order ID.
+  7. Click "Logout".
+
+STEP 2.4: MANUFACTURER ASSIGNS SUPPLIER & DISTRIBUTOR
+  1. Log in as Manufacturer ("OmniMfgCorp" / "mfg123").
+  2. Under "Orders & Leg 2 Fulfillment", find your new Order ID.
+  3. From the dropdowns, assign:
+     - Supplier: ApexMaterials
+     - Distributor: ExpressDistributors (or your preferred distributor)
+  4. Click "Assign Supplier & Distributor".
+  5. Click "Logout".
+
+STEP 2.5: SUPPLIER DISPATCHES LEG 1 (Supplier -> Manufacturer)
+  1. Log in as Supplier ("ApexMaterials" / "supplier123").
+  2. Under "Leg 1 Shipments", find the order and click "Create Leg 1".
+  3. Change status from "PREPARING" -> "SHIPPED" -> "DELIVERED".
+  4. Click "Update Shipment Status".
+  5. Leg 1 is now recorded on-chain as DELIVERED.
+  6. Click "Logout".
+
+STEP 2.6: MANUFACTURER DISPATCHES LEG 2 (Manufacturer -> Distributor)
+  1. Log in as Manufacturer ("OmniMfgCorp" / "mfg123").
+  2. Under "Leg 2 Fulfillment", find the order and click "Create Leg 2".
+  3. Change status to "DELIVERED" and click "Update Shipment Status".
+  4. Click "Logout".
+
+STEP 2.7: DISTRIBUTOR ASSIGNS RETAILER & DISPATCHES LEG 3 (Distributor -> Retailer)
+  1. Log in as Distributor ("ExpressDistributors" / "dist123").
+  2. Under "Incoming & Outgoing Shipments", find the order.
+  3. Assign Retailer: Select "MetroRetailStore" and click "Assign Retailer".
+  4. Click "Create Leg 3".
+  5. IMPORTANT: Change status from "IN_TRANSIT" to "DELIVERED" and click "Update Shipment Status".
+     * WARNING: If you leave Leg 3 in "IN_TRANSIT", the final order cannot be completed!
+  6. Click "Logout".
+
+STEP 2.8: RETAILER DISPATCHES LEG 4 (Retailer -> Consumer)
+  1. Log in as Retailer ("MetroRetailStore" / "retailer123").
+  2. Under "Leg 4 Last-Mile Delivery", find the order and click "Create Leg 4".
+  3. Change status to "DELIVERED" and click "Update Shipment Status".
+  4. Full order delivery is now complete!
+
+----------------------------------------------------------------------------------------
+SECTION 3: DISRUPTION SIMULATION & RECOVERY WORKFLOW
+----------------------------------------------------------------------------------------
+What is a Disruption?
+A disruption occurs when a shipment leg is delayed, carrier transit fails, or a participant
+breaches capacity/lead times.
+
+STEP 3.1: HOW A DISRUPTION IS TRIGGERED
+  There are two ways a disruption appears in the system:
+  Option A (Automatic Scanner):
+    - Go to /disruptions and click the blue "Run Disruption Scanner" button.
+    - The engine inspects expected vs. actual delivery dates across all active legs.
+  Option B (Manual Flagging):
+    - When updating any leg status in Supplier, Manufacturer, Distributor, or Retailer
+      dashboards, select "DELAYED" or "DISRUPTED" in the status dropdown and submit.
+
+STEP 3.2: VIEWING THE DISRUPTION IN THE DISRUPTION CENTER
+  1. Navigate to http://127.0.0.1:5000/disruptions (or click "Disruptions" in the top navbar).
+  2. You will see a table titled "Recorded Supply Chain Disruptions".
+  3. Locate your order (e.g. ORD-1790665550) with Disruption Type "TRANSPORT_DELAY".
+  4. Under the "ACTIONS / RECOMMENDATIONS" column, click the blue button:
+     "View Recommendations".
+
+STEP 3.3: UNDERSTANDING THE RECOMMENDATIONS SCREEN
+  The screen will display:
+  - Downstream Impact Analysis: Shows the calculated delay (e.g., 4 days) and projected new delivery date.
+  - Target Role to Replace: E.g., "DISTRIBUTOR" or "SUPPLIER".
+  - Candidate Ranking Table:
+    * Candidate Username (e.g., ExpressDistributors, dis1)
+    * Eth Address
+    * Capacity & Lead Time
+    * Past Disruptions count
+    * Rank Score (e.g., 105.0 - HIGHLY_RECOMMENDED)
+
+STEP 3.4: HOW TO RESOLVE & SWITCH PARTICIPANT ON-CHAIN
+  1. In the Candidate table, locate the top-scoring candidate.
+  2. Look at the "ACTION" column:
+     - You will see the green button:
+       [ Confirm & Switch on Chain ]
+  3. Click "Confirm & Switch on Chain".
+  4. What happens automatically:
+     - The smart contract executes `updateOrderDistributor` / `updateOrderSupplier` / `updateOrderRetailer`.
+     - An immutable `RoleSwitched` event is recorded on Ethereum Ganache.
+     - An automated email notification is sent to the new participant.
+     - A green flash message confirms: "Successfully confirmed replacement on Blockchain!".
+
+STEP 3.5: COMPLETING THE RECOVERED SHIPMENT
+  1. Log in as the newly assigned candidate account.
+  2. The reassigned order will now appear on their dashboard.
+  3. Proceed with the shipment leg and mark status as "DELIVERED".
+  4. The bottleneck is cleared, and downstream legs can proceed smoothly!
+
+----------------------------------------------------------------------------------------
+SECTION 4: VERIFYING TRACEABILITY & AUDIT TIMELINE
+----------------------------------------------------------------------------------------
+STEP 4.1: OPEN TRACEABILITY PAGE
+  1. Click "Traceability" in the top navigation bar (http://127.0.0.1:5000/traceability).
+  2. The page automatically loads the most recently updated order.
+  3. Alternatively, use the "Quick Select Order" dropdown to select any Order ID.
+
+STEP 4.2: AUDITING THE TIMELINE
+  Inspect the visual progress stepper:
+  - Consumer (Cart Icon) -> Shows consumer ETH address & order creation.
+  - Step 1 (Supplier)    -> Leg 1 status (Green = DELIVERED).
+  - Step 2 (Mfg)         -> Leg 2 status (Green = DELIVERED).
+  - Step 3 (Distributor) -> Leg 3 status (Green = DELIVERED, Blue = IN_TRANSIT).
+  - Step 4 (Retailer)    -> Leg 4 status (Green = DELIVERED).
+  - Overall Order Status Badge -> Shows "DELIVERED" once all legs are complete.
+
+STEP 4.3: INSPECTING SHIPMENT LEG AUDIT HISTORY
+  Below the timeline, review the "Shipment Leg Audit History" table:
+  - Leg IDs (e.g. LEG1-ORD-..., LEG2-ORD-...)
+  - Sender & Recipient Ethereum addresses (clickable / verifiable)
+  - Status badges
+  - Expected Dates & actual timestamps
+  - IPFS Document Hashes (e.g. QmLeg1Doc, QmLeg2Doc)
+
+========================================================================================
+                             TROUBLESHOOTING & COMMON MISTAKES
+========================================================================================
+Q: Leg 4 shows DELIVERED, but the order status is still "SHIPPED". Why?
+A: Leg 3 (Distributor -> Retailer) was left as "IN_TRANSIT". Log into the Distributor
+   account and mark Leg 3 as "DELIVERED".
+
+Q: In Disruptions, I see a yellow notice instead of the Confirm button. Why?
+A: The template has now been updated to show the "Confirm & Switch on Chain" button to
+   all logged-in participants (Retailer, Manufacturer, Distributor, Supplier, Admin).
+   Simply refresh your browser page (F5) to see the green button.
+
+Q: How do I test with new accounts?
+A: Register at /register with any unique username. Then log in as Admin (/admin_login)
+   and click "Approve" next to the new user.
+========================================================================================

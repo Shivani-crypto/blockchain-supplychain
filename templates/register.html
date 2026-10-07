@@ -1,0 +1,52 @@
+{% extends "layout.html" %}
+{% set active_page = "register" %}
+
+{% block title %}Participant Self-Registration{% endblock %}
+
+{% block content %}
+<div style="max-width: 540px; margin: 30px auto;">
+    <div class="glass-card">
+        <div style="text-align: center; margin-bottom: 24px;">
+            <div class="brand-icon" style="margin: 0 auto 12px auto;"><i class="fa-solid fa-user-plus"></i></div>
+            <h2>Participant Self-Registration</h2>
+            <p style="color: var(--text-muted); font-size: 0.88rem;">Register your profile. Approval required by Admin before login.</p>
+        </div>
+
+        <form action="{{ url_for('register') }}" method="POST">
+            <div class="form-group">
+                <label class="form-label">Desired Role</label>
+                <select name="role" class="form-select" required>
+                    <option value="SUPPLIER">Supplier</option>
+                    <option value="MANUFACTURER">Manufacturer</option>
+                    <option value="DISTRIBUTOR">Distributor</option>
+                    <option value="RETAILER">Retailer</option>
+                    <option value="CONSUMER">Consumer</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Username</label>
+                <input type="text" name="username" class="form-control" placeholder="Choose username" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Email (For Alert Notifications)</label>
+                <input type="email" name="email" class="form-control" placeholder="user@company.com" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <input type="password" name="password" class="form-control" placeholder="Set secure password" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 10px;">
+                <i class="fa-solid fa-paper-plane"></i> Submit Registration
+            </button>
+        </form>
+
+        <div style="text-align: center; margin-top: 20px; font-size: 0.85rem; color: var(--text-muted);">
+            Already approved? <a href="{{ url_for('login') }}">Log in here</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

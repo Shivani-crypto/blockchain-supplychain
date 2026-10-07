@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Decentralized Supply Chain{% endblock %} - Blockchain SCM</title>
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app-wrapper">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div>
+                <div class="brand-header">
+                    <div class="brand-icon"><i class="fa-solid fa-link"></i></div>
+                    <div>
+                        <div class="brand-title">ChainGuard</div>
+                        <div class="brand-subtitle">Blockchain SCM</div>
+                    </div>
+                </div>
+
+                <ul class="nav-list">
+                    {% if session.get('role') %}
+                        <li class="nav-item {% if active_page == 'dashboard' %}active{% endif %}">
+                            <a href="{{ url_for('dashboard') }}"><i class="fa-solid fa-gauge"></i> Dashboard</a>
+                        </li>
+                        <li class="nav-item {% if active_page == 'traceability' %}active{% endif %}">
+                            <a href="{{ url_for('traceability') }}"><i class="fa-solid fa-route"></i> Traceability</a>
+                        </li>
+                        <li class="nav-item {% if active_page == 'disruptions' %}active{% endif %}">
+                            <a href="{{ url_for('disruptions_page') }}"><i class="fa-solid fa-triangle-exclamation"></i> Disruptions</a>
+                        </li>
+                        {% if session.get('role') == 'ADMIN' %}
+                        <li class="nav-item {% if active_page == 'audit' %}active{% endif %}">
+                            <a href="{{ url_for('dashboard') }}"><i class="fa-solid fa-chart-line"></i> Audit & Analytics</a>
+                        </li>
+                        {% endif %}
+                    {% else %}
+                        <li class="nav-item {% if active_page == 'home' %}active{% endif %}">
+                            <a href="{{ url_for('index') }}"><i class="fa-solid fa-house"></i> Home</a>
+                        </li>
+                        <li class="nav-item {% if active_page == 'login' %}active{% endif %}">
+                            <a href="{{ url_for('login') }}"><i class="fa-solid fa-right-to-bracket"></i> User Login</a>
+                        </li>
+                        <li class="nav-item {% if active_page == 'admin_login' %}active{% endif %}">
+                            <a href="{{ url_for('admin_login') }}"><i class="fa-solid fa-user-shield"></i> Admin Login</a>
+                        </li>
+                        <li class="nav-item {% if active_page == 'register' %}active{% endif %}">
+                            <a href="{{ url_for('register') }}"><i class="fa-solid fa-user-plus"></i> Register</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+
+            {% if session.get('username') %}
+            <div class="user-sidebar-profile">
+                <div class="user-name">{{ session.get('username') }}</div>
+                <div class="user-role-badge">{{ session.get('role') }}</div>
+                <div style="margin-top: 10px; font-size: 0.75rem;" class="address-code">
+                    {{ session.get('eth_address')[:8] }}...{{ session.get('eth_address')[-6:] if session.get('eth_address') else '' }}
+                </div>
+                <a href="{{ url_for('logout') }}" style="display: block; margin-top: 10px; font-size: 0.82rem; color: #e11d48; font-weight: 600;">
+                    <i class="fa-solid fa-power-off"></i> Logout
+                </a>
+            </div>
+            {% endif %}
+        </aside>
+
+        <!-- Main Content View -->
+        <main class="main-content">
+            <!-- Flash Message Alerts -->
+            <div class="alert-container">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category if category != 'message' else 'info' }}">
+                                <i class="fa-solid {% if category == 'success' %}fa-circle-check{% elif category == 'error' %}fa-circle-xmark{% else %}fa-circle-info{% endif %}"></i>
+                                <span>{{ message }}</span>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+            </div>
+
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

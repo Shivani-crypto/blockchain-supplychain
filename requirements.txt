@@ -1,0 +1,9 @@
+flask>=3.0.0
+web3>=6.0.0
+eth-tester>=0.11.0
+py-solc-x>=2.0.0
+pycryptodome>=3.20.0
+cryptography>=42.0.0
+requests>=2.31.0
+Jinja2>=3.1.0
+Werkzeug>=3.0.0

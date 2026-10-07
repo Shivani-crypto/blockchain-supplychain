@@ -1,0 +1,203 @@
+{% extends "layout.html" %}
+{% set active_page = "dashboard" %}
+
+{% block title %}Admin Audit & Governance Dashboard{% endblock %}
+
+{% block content %}
+<div class="top-bar">
+    <div>
+        <h1 class="page-title"><i class="fa-solid fa-user-shield" style="color: var(--primary);"></i> Admin Control Center</h1>
+        <p class="page-desc">System Governance, User Approvals, Audit Logs, and Analytics</p>
+    </div>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon cyan"><i class="fa-solid fa-users"></i></div>
+        <div class="stat-info">
+            <div class="stat-value">{{ system_counts.participants }}</div>
+            <div class="stat-label">Registered Participants</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon indigo"><i class="fa-solid fa-dolly"></i></div>
+        <div class="stat-info">
+            <div class="stat-value">{{ system_counts.orders }}</div>
+            <div class="stat-label">System Orders</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon emerald"><i class="fa-solid fa-truck-ramp-box"></i></div>
+        <div class="stat-info">
+            <div class="stat-value">{{ system_counts.legs }}</div>
+            <div class="stat-label">Shipment Legs</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon rose"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <div class="stat-info">
+            <div class="stat-value">{{ system_counts.disruptions }}</div>
+            <div class="stat-label">Recorded Disruptions</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon amber"><i class="fa-solid fa-shuffle"></i></div>
+        <div class="stat-info">
+            <div class="stat-value">{{ system_counts.switches }}</div>
+            <div class="stat-label">On-Chain Role Switches</div>
+        </div>
+    </div>
+</div>
+
+<!-- ANALYTICS CHARTS SECTION -->
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px;">
+    <div class="glass-card">
+        <h3><i class="fa-solid fa-chart-pie" style="color: var(--primary);"></i> System Overview Breakdown</h3>
+        <div style="height: 260px; position: relative; margin-top: 16px;">
+            <canvas id="chartOverview"></canvas>
+        </div>
+    </div>
+
+    <div class="glass-card">
+        <h3><i class="fa-solid fa-chart-bar" style="color: var(--accent-indigo);"></i> Shipment Leg Distribution</h3>
+        <div style="height: 260px; position: relative; margin-top: 16px;">
+            <canvas id="chartLegs"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- PENDING USER APPROVALS -->
+<div class="glass-card">
+    <h3><i class="fa-solid fa-user-clock" style="color: var(--accent-amber);"></i> Pending Self-Registration Requests</h3>
+    <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 16px;">Review and approve participant access to interact with smart contracts.</p>
+
+    <div class="table-responsive">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Role</th>
+                    <th>Email Alert</th>
+                    <th>Ethereum Address</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% set pending_users = [] %}
+                {% for p in participants %}
+                    {% if p.status_str == 'PENDING' %}
+                        {% set _ = pending_users.append(p) %}
+                        <tr>
+                            <td><strong>{{ p.username }}</strong></td>
+                            <td><span class="badge badge-info">{{ p.role_str }}</span></td>
+                            <td>{{ p.email }}</td>
+                            <td><span class="address-code">{{ p.ethAddress }}</span></td>
+                            <td><span class="badge badge-pending">{{ p.status_str }}</span></td>
+                            <td>
+                                <a href="{{ url_for('approve_user_route', user_address=p.ethAddress) }}" class="btn btn-success btn-sm">
+                                    <i class="fa-solid fa-check"></i> Approve
+                                </a>
+                                <a href="{{ url_for('reject_user_route', user_address=p.ethAddress) }}" class="btn btn-danger btn-sm">
+                                    <i class="fa-solid fa-xmark"></i> Reject
+                                </a>
+                            </td>
+                        </tr>
+                    {% endif %}
+                {% endfor %}
+                {% if pending_users|length == 0 %}
+                <tr>
+                    <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px;">
+                        No pending user registration requests. All participants up to date.
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ALL REGISTERED PARTICIPANTS -->
+<div class="glass-card">
+    <h3><i class="fa-solid fa-address-book" style="color: var(--primary);"></i> Registered Participants Directory</h3>
+    <div class="table-responsive">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Role</th>
+                    <th>Email</th>
+                    <th>ETH Address</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in participants %}
+                <tr>
+                    <td><strong>{{ p.username }}</strong></td>
+                    <td><span class="badge badge-info">{{ p.role_str }}</span></td>
+                    <td>{{ p.email }}</td>
+                    <td><span class="address-code">{{ p.ethAddress }}</span></td>
+                    <td>
+                        <span class="badge {% if p.status_str == 'APPROVED' %}badge-approved{% elif p.status_str == 'PENDING' %}badge-pending{% else %}badge-rejected{% endif %}">
+                            {{ p.status_str }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- AUDIT LOG: ROLE SWITCHES & DISRUPTIONS -->
+<div class="glass-card">
+    <h3><i class="fa-solid fa-clock-rotate-left" style="color: var(--accent-rose);"></i> Audit Log: Disruption & Role Switch History</h3>
+    <div class="table-responsive">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Switch ID</th>
+                    <th>Order ID</th>
+                    <th>Role</th>
+                    <th>Old Participant</th>
+                    <th>New Participant</th>
+                    <th>Reason</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in role_switches %}
+                <tr>
+                    <td><span class="address-code">{{ s.switchId }}</span></td>
+                    <td><strong>{{ s.orderId }}</strong></td>
+                    <td><span class="badge badge-info">{{ s.role_str }}</span></td>
+                    <td><span class="address-code">{{ s.oldParticipant[:8] }}...</span></td>
+                    <td><span class="address-code">{{ s.newParticipant[:8] }}...</span></td>
+                    <td>{{ s.reason }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px;">
+                        No role switches recorded on chain yet.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/analytics.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        initAdminCharts({
+            orders: {{ system_counts.orders }},
+            legs: {{ system_counts.legs }},
+            disruptions: {{ system_counts.disruptions }},
+            switches: {{ system_counts.switches }}
+        });
+    });
+</script>
+{% endblock %}
